@@ -5,9 +5,62 @@ date: "20 3 2019"
 output: html_document
 ---
 
-# Daten einlesen
+```{r}
+#Pakete installieren
+
+library(tidyverse)
+library(haven)
+library(readxl)
+library(lubridate)
+library(summarytools)
+library(pander)
+```
+
+
 
 ```{r}
+# Daten einlesen - officers with allegations (Vorwürfe)
+setwd("/Users/John/Desktop/Bachelorarbeit/data/AllegationsData")
 
+test <- read_delim("foia 14-3668 officers with cr allegations.txt", delim = "||")
+
+ 
+```
+
+```{r}
+# Daten einlesen officer assignment (zuordnung der officers)
+
+setwd("/Users/John/Desktop/Bachelorarbeit/data/SwornEmployeesData")
+
+SwornEmployeesData <- read_xlsx("Kalven 16-1105 All Sworn Employees.xlsx")
+
+# na aus daten bei cpd unit bereinigen und ersetzen
+
+SwornEmployeesData$CPD_UNIT_ASSIGNED_NO[is.na(SwornEmployeesData$CPD_UNIT_ASSIGNED_NO)] <- 999999
+
+# geburtsdatum berechnen, 2016 - currage
+
+SwornEmployeesData <- SwornEmployeesData %>% 
+  mutate(birthdate = 2016 - CURRAGE) %>%
+  arrange(LAST_NME, FIRST_NME, APPOINTED_DATE) %>%
+  group_by(LAST_NME, FIRST_NME, APPOINTED_DATE)
+  
+# fehlende end date ersetzen mit 08. März 2016 (wird angenommen, dass die noch da arbeiten)
+
+enddate <- ymd("2016.03.08")
+
+SwornEmployeesData$END_DATE <- as_date(SwornEmployeesData$END_DATE)
+
+SwornEmployeesData$END_DATE[is.na(SwornEmployeesData$END_DATE)] <- enddate
+
+# wenn effecitve date leer, dann effective date = appointed date
+
+SwornEmployeesData$EFFECTIVE_DATE[is.na(SwornEmployeesData$EFFECTIVE_DATE)] <- SwornEmployeesData$APPOINTED_DATE[is.na(SwornEmployeesData$EFFECTIVE_DATE)]
+
+
+# daten bei denen end date vor effective date
+
+SwornEmployeesData <- SwornEmployeesData %>%
+  mutate(drop = END_DATE - EFFECTIVE_DATE)
 ```
 
