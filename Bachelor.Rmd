@@ -50,6 +50,8 @@ SwornEmployeesData <- SwornEmployeesData %>%
 enddate <- ymd("2016.03.08")
 
 SwornEmployeesData$END_DATE <- as_date(SwornEmployeesData$END_DATE)
+SwornEmployeesData$EFFECTIVE_DATE <- as_date(SwornEmployeesData$EFFECTIVE_DATE)
+SwornEmployeesData$APPOINTED_DATE <- as_date(SwornEmployeesData$APPOINTED_DATE)
 
 SwornEmployeesData$END_DATE[is.na(SwornEmployeesData$END_DATE)] <- enddate
 
@@ -58,9 +60,43 @@ SwornEmployeesData$END_DATE[is.na(SwornEmployeesData$END_DATE)] <- enddate
 SwornEmployeesData$EFFECTIVE_DATE[is.na(SwornEmployeesData$EFFECTIVE_DATE)] <- SwornEmployeesData$APPOINTED_DATE[is.na(SwornEmployeesData$EFFECTIVE_DATE)]
 
 
-# daten bei denen end date vor effective date
+# daten bei denen end date vor effective date löschen (2 tage diff möglich)
 
 SwornEmployeesData <- SwornEmployeesData %>%
   mutate(drop = END_DATE - EFFECTIVE_DATE)
+
+SwornEmployeesData <- SwornEmployeesData %>%
+  filter(drop > 2)
+
+colnames(SwornEmployeesData)[5] <- "Current age of the officer"
+
+# ca, zeile 700 in stata cleaning.do
+
+# duplizieren und neue spalte mit 0 = orginal und 1 = kopie
+
+SwornEmployeesData2 <- SwornEmployeesData  
+
+SwornEmployeesData <- SwornEmployeesData %>%
+  mutate(duplicate = 0) %>%
+  mutate(date = EFFECTIVE_DATE + 1)
+
+SwornEmployeesData2 <- SwornEmployeesData2 %>%
+  mutate(duplicate = 1) %>%
+  mutate(date = END_DATE - 1)
+
+
+SwornEmployeesData <- rbind(SwornEmployeesData, SwornEmployeesData2)
+
+SwornEmployeesData <- SwornEmployeesData %>%
+  arrange(LAST_NME, FIRST_NME, APPOINTED_DATE)
+
+SwornEmployeesData_indices <- SwornEmployeesData %>%
+  group_indices()
+
+SwornEmployeesData_indices <- as_tibble(SwornEmployeesData_indices)
+colnames(SwornEmployeesData_indices)[1] <- "ID"
+
+SwornEmployeesData <- cbind(SwornEmployeesData, SwornEmployeesData_indices)
+
 ```
 
